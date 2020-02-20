@@ -62,10 +62,12 @@ def DrawPoints(count = 0):
         else :
             points.append(None)
 
-        #if append(None) : TypeError: unsupported operand type(s) for -: 'NoneType' and 'int'
+        #if points.append(None) -> TypeError: unsupported operand type(s) for -: 'NoneType' and 'int'
         headHeight = np.array(points[0][1])
+        #draws circle and shows y value
         cv2.circle(frame, points[0],8 , (0,255,0), thickness=-1, lineType = cv2.FILLED)
         cv2.putText(frame, "{}".format(int(y)), points[0], cv2.FONT_HERSHEY_COMPLEX, .8, (255, 50, 0), 2, lineType=cv2.LINE_AA)
+        #get int value for y
         return int(headHeight)
 
     # Draw Skeleton
@@ -79,11 +81,14 @@ def DrawPoints(count = 0):
             cv2.circle(frame, points[partB], 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
 
 def DetectFall(time_prev, headHeight, headHeight_prev, t):
+    #point y at curr frame - point y at previous
     delta_distance = headHeight - headHeight_prev
+    #time for 1 frame to be processed
     delta_time = time.time() - t
     time_prev = t
     print(delta_time)
 
+    #needs change of algorithm
     if delta_distance/delta_time > 0.1 and time_prev > 0:
         return True
     else:
@@ -107,10 +112,13 @@ while cv2.waitKey(1) < 0:
 
     headHeight_prev = headHeight
     headHeight = DrawPoints()
+    #error check
     print(headHeight, headHeight_prev)
+
     if DetectFall(time_prev, headHeight, headHeight_prev, t):
         count += 1
     
+    #in case of faulty detections
     if count > 5:
         cv2.putText(frame, "Fall Detected", (50,50), 
                     cv2.FONT_HERSHEY_COMPLEX, .8, (0,0,255), 2, lineType=cv2.LINE_AA)
