@@ -20,7 +20,7 @@ elif MODE is "MPI" :
 inWidth = 368
 inHeight = 368
 #threshold 0, so it doesn't append 'None'
-threshold = 0
+threshold = 0.05
 
 
 input_source = "models/sample_video1.mp4"
@@ -42,36 +42,41 @@ def DrawPoints(count = 0):
     # Empty list to store the detected keypoints
     points = []
 
-    for i in range(nPoints):
+    #for i in range(nPoints):
         # confidence map of corresponding body's part.
-        probMap = output[0, i, :, :]
+    probMap = output[0, 0, :, :]
 
         # Find global maxima of the probMap.
-        minVal, prob, minLoc, point = cv2.minMaxLoc(probMap)
+    minVal, prob, minLoc, point = cv2.minMaxLoc(probMap)
         
         # Scale the point to fit on the original image
-        x = (frameWidth * point[0]) / W
-        y = (frameHeight * point[1]) / H
+    x = (frameWidth * point[0]) / W
+    y = (frameHeight * point[1]) / H
 
-        if prob > threshold : 
-            #cv2.circle(frameCopy, (int(x), int(y)), 8, (0, 255, 255), thickness=-1, lineType=cv2.FILLED)
-            #cv2.putText(frameCopy, "{}".format(i), (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, lineType=cv2.LINE_AA)
+    if prob > threshold : 
+        #cv2.circle(frameCopy, (int(x), int(y)), 8, (0, 255, 255), thickness=-1, lineType=cv2.FILLED)
+        #cv2.putText(frameCopy, "{}".format(i), (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, lineType=cv2.LINE_AA)
 
-            # Add the point to the list if the probability is greater than the threshold
-            points.append((int(x), int(y)))
-        else :
-            points.append(None)
+        # Add the point to the list if the probability is greater than the threshold
+        points.append((int(x), int(y)))
+    else :
+        points.append(None)
 
-        #if points.append(None) -> TypeError: unsupported operand type(s) for -: 'NoneType' and 'int'
+    print(points)
+
+    #if points.append(None) -> TypeError: unsupported operand type(s) for -: 'NoneType' and 'int'
+    if None not in points:
         headHeight = np.array(points[0][1])
-        #draws circle and shows y value
+    #draws circle and shows y value
         cv2.circle(frame, points[0],8 , (0,255,0), thickness=-1, lineType = cv2.FILLED)
         cv2.putText(frame, "{}".format(int(y)), points[0], cv2.FONT_HERSHEY_COMPLEX, .8, (255, 50, 0), 2, lineType=cv2.LINE_AA)
         #get int value for y
         return int(headHeight)
+    else:
+        return headHeight_prev
 
     # Draw Skeleton
-    for pair in POSE_PAIRS:
+"""    for pair in POSE_PAIRS:
         partA = pair[0]
         partB = pair[1]
 
@@ -79,7 +84,7 @@ def DrawPoints(count = 0):
             cv2.line(frame, points[partA], points[partB], (0, 255, 255), 3, lineType=cv2.LINE_AA)
             cv2.circle(frame, points[partA], 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
             cv2.circle(frame, points[partB], 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
-
+"""
 def DetectFall(time_prev, headHeight, headHeight_prev, t):
     #point y at curr frame - point y at previous
     delta_distance = headHeight - headHeight_prev
@@ -130,4 +135,4 @@ while cv2.waitKey(1) < 0:
 
     vid_writer.write(frame)
 
-vid_writer.release()
+vid_writer.release()    
