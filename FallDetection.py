@@ -22,12 +22,12 @@ inHeight = 368
 threshold = 0.01
 
 
-input_source = "models/sample_video1.mp4"
+input_source = "models/sample_video.mp4"
 cap = cv2.VideoCapture(input_source)
 fps = cap.get(cv2.CAP_PROP_FPS)
 hasFrame, frame = cap.read()
 
-vid_writer = cv2.VideoWriter('models/output1.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 20, (frame.shape[1],frame.shape[0]))
+vid_writer = cv2.VideoWriter('models/output.avi',cv2.VideoWriter_fourcc('M','J','P','G'), 20, (frame.shape[1],frame.shape[0]))
 
 net = cv2.dnn.readNetFromCaffe(protoFile, weightsFile)
 #net.setPreferableTarget(cv2.dnn.DNN_TARGET_OPENCL_FP16)
@@ -100,12 +100,18 @@ def DetectFall(time_prev, headHeight, headHeight_prev, t, fps, torsoHeight):
 
 
     if change_per_sec > inHeight/2 and time_prev > 0:
-        if headHeight > inHeight/4:
-            if torsoHeight - headHeight < 70:
-                print("lol: ", torsoHeight - headHeight)
+        if headHeight > inHeight/3:
+            if torsoHeight - headHeight < 60:
                 return True
             else:
                 return False
+    else:
+        return False
+
+def DetectGetUp(headHeight, headHeight_prev):
+    delta_distance = headHeight_prev - headHeight
+    if delta_distance > 40:
+        return True
     else:
         return False
 
@@ -139,7 +145,12 @@ while cv2.waitKey(1) < 0:
         cv2.putText(frame, "Fall Detected", (50,50), 
                 cv2.FONT_HERSHEY_COMPLEX, .8, (0,0,255), 2, lineType=cv2.LINE_AA)
 
-    cv2.putText(frame, "time taken = {:.2f} sec".format(time.time() - t), (30, 20), cv2.FONT_HERSHEY_COMPLEX, .8, (255, 50, 0), 2, lineType=cv2.LINE_AA)
+        if DetectGetUp(headHeight,headHeight_prev):
+            cv2.putText(frame, "Get Up Detected", (50,50), cv2.FONT_HERSHEY_SIMPLEX,
+                .8, (0,255,0), 2, lineType=cv2.LINE_AA)
+
+    cv2.putText(frame, "time taken = {:.2f} sec".format(time.time() - t), 
+                (30, 20), cv2.FONT_HERSHEY_COMPLEX, .8, (255, 50, 0), 2, lineType=cv2.LINE_AA)
     #cv2.putText(frame, "OpenPose using OpenCV", (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 50, 0), 2, lineType=cv2.LINE_AA)
     # cv2.imshow('Output-Keypoints', frameCopy)
     cv2.imshow('Output-Skeleton', frame)
