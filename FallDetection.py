@@ -142,7 +142,6 @@ def DetectGetUp():
     else:
         return False
 
-
 if __name__ == '__main__':
     while cv2.waitKey(1) < 0:
         t = time.time()
@@ -195,6 +194,5 @@ if __name__ == '__main__':
 
 
     with open('models/FallDetection/HeightPoints.txt', 'w') as json_file:
-        json.dumps(heights, json_file)
-        #json.dump(torso_list, json_file)
-    #vid_writer.release()    
+        json.dump(heights, json_file)
+    #vid_writer.release()
