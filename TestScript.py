@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 import json
-import matplotlib
+import matplotlib.pyplot as plt
 
 with open('models/FallDetection/HeightPoints.txt', 'r') as json_file:
     heights = json.load(json_file)
