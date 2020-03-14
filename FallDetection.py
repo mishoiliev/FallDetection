@@ -2,16 +2,19 @@ import cv2
 import numpy as np
 import time
 import argparse
+import json
 
-parser = argparse.ArgumentParser(description="Set a method for Fall Detection")
-parser.add_argument("--mode", choices= ['multi', "single"],required=True, type = str, help = "Mode of detection")
-parser.add_argument("--height", default = 60, type = int, 
-                    help = "Distance between the torso and the head in cm. \nType '--height=<number>'")
+def Parser():
+    parser = argparse.ArgumentParser(description="Set a method for Fall Detection")
+    parser.add_argument("--mode", choices= ['multi', "single"],required=True, type = str, help = "Mode of detection")
+    parser.add_argument("--height", default = 60, type = int, 
+                        help = "Distance between the torso and the head in cm. \nType '--height=<number>'")
 
-args = parser.parse_args()
+    args = parser.parse_args()
 
-mode = args.mode
-person_Height = args.height
+    mode = args.mode
+    person_Height = args.height
+    return mode,person_Height
 
 MODE = "COCO"
 
@@ -38,12 +41,15 @@ cap = cv2.VideoCapture(input_source)
 fps = cap.get(cv2.CAP_PROP_FPS)
 hasFrame, frame = cap.read()
 
-vid_writer = cv2.VideoWriter('models/output1.avi',cv2.VideoWriter_fourcc('M','J','P','G'), fps, (frame.shape[1],frame.shape[0]))
+#vid_writer = cv2.VideoWriter('models/output4.mp4',cv2.VideoWriter_fourcc('M','J','P','G'), fps, (frame.shape[1],frame.shape[0]))
 
 net = cv2.dnn.readNetFromCaffe(protoFile, weightsFile)
 
 headHeight = 0
-torsoHeight = 0 
+torsoHeight = 0
+torso_list = []
+head_list = []
+
 
 def DrawPoints(count = 0):
     inpBlob = cv2.dnn.blobFromImage(frame, 1.0 / 255, (inWidth, inHeight),
@@ -105,13 +111,13 @@ def DrawPoints(count = 0):
 
 def DetectFall(headHeight, headHeight_prev, fps, torsoHeight, pixel_length, FallDetected):
         #point y at curr frame - point y at previous
-    delta_distance = headHeight - headHeight_prev
+    delta_distance = torsoHeight - torsoHeight_prev
     change_per_sec = delta_distance*fps
 
     if mode == "multi":
         if change_per_sec > inHeight/2:
             if headHeight > inHeight/3:
-                if torsoHeight - headHeight < 80:
+                if torsoHeight - headHeight < 70:
                     FallDetected = True
                     return True
                 else:
@@ -120,8 +126,8 @@ def DetectFall(headHeight, headHeight_prev, fps, torsoHeight, pixel_length, Fall
             return False
     elif mode == "single":
         speed_per_sec = change_per_sec*pixel_length
-        if speed_per_sec > 500:
-            if torsoHeight - headHeight < 80:
+        if speed_per_sec > 200:
+            if torsoHeight - headHeight < 70:
                 FallDetected = True
                 return True
             else:
@@ -129,51 +135,66 @@ def DetectFall(headHeight, headHeight_prev, fps, torsoHeight, pixel_length, Fall
         else:
             return False
 
-def DetectGetUp(headHeight, torsoHeight):
+def DetectGetUp():
     delta_distance = torsoHeight - headHeight
-    if delta_distance > 80:
+    if delta_distance > 70:
         return True
     else:
         return False
 
-while cv2.waitKey(1) < 0:
-    t = time.time()
-    hasFrame, frame = cap.read()
-    frameCopy = np.copy(frame)
-    if not hasFrame:
-        cv2.waitKey()
-        cv2.destroyAllWindows()
-        break
 
-    frameWidth = frame.shape[1]
-    frameHeight = frame.shape[0]
+if __name__ == '__main__':
+    while cv2.waitKey(1) < 0:
+        t = time.time()
+        mode, person_Height = Parser()
+        hasFrame, frame = cap.read()
+        frameCopy = np.copy(frame)
+        if not hasFrame:
+            cv2.waitKey()
+            cv2.destroyAllWindows()
+            break
 
-    headHeight_prev = headHeight
-    torsoHeight_prev = torsoHeight
-    headHeight, torsoHeight = DrawPoints()
-    try:
-        pixel_length = float(person_Height/(torsoHeight - headHeight))
-    except:
-        pass
-        #pixel_length = float(person_Height/(torsoHeight_prev - headHeight_prev))
-    #error check
-    #print("Head Height: " + headHeight,"Head Heigh previous: " + headHeight_prev,"Torso Height: " + torsoHeight)
+        frameWidth = frame.shape[1]
+        frameHeight = frame.shape[0]
 
-    if DetectFall(headHeight, headHeight_prev, fps, torsoHeight, pixel_length, FallDetected):
-        cv2.putText(frame, "Fall Detected", (50,50), 
-                cv2.FONT_HERSHEY_COMPLEX, .8, (0,0,255), 2, lineType=cv2.LINE_AA)
+        headHeight_prev = headHeight
+        torsoHeight_prev = torsoHeight
+        headHeight, torsoHeight = DrawPoints()
+        head_list.append(headHeight)
+        torso_list.append(torsoHeight)
+        try:
+            pixel_length = float(person_Height/(torsoHeight - headHeight))
+        except:
+            pass
+            #pixel_length = float(person_Height/(torsoHeight_prev - headHeight_prev))
+        #error check
+        print("Head Height: {}\nHead Heigh previous: {} \nTorso Height: {}".format(headHeight,headHeight_prev, torsoHeight))
 
-    if FallDetected:
-        if DetectGetUp(headHeight, torsoHeight):
-            cv2.putText(frame, "Get Up Detected", (50,50), cv2.FONT_HERSHEY_SIMPLEX,
-                            .8, (0,255,0), 2, lineType=cv2.LINE_AA)
+        if DetectFall(headHeight, headHeight_prev, fps, torsoHeight, pixel_length, FallDetected):
+            cv2.putText(frame, "Fall Detected", (50,50), 
+                    cv2.FONT_HERSHEY_COMPLEX, .8, (0,0,255), 2, lineType=cv2.LINE_AA)
 
-    cv2.putText(frame, "time taken = {:.2f} sec".format(time.time() - t), 
-                (30, 20), cv2.FONT_HERSHEY_COMPLEX, .8, (255, 50, 0), 2, lineType=cv2.LINE_AA)
-    #cv2.putText(frame, "OpenPose using OpenCV", (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 50, 0), 2, lineType=cv2.LINE_AA)
-    # cv2.imshow('Output-Keypoints', frameCopy)
-    cv2.imshow('Output-Skeleton', frame)
+        if FallDetected:
+            if DetectGetUp():
+                cv2.putText(frame, "Get Up Detected", (50,50), cv2.FONT_HERSHEY_SIMPLEX,
+                                .8, (0,255,0), 2, lineType=cv2.LINE_AA)
 
-    vid_writer.write(frame)
+        cv2.putText(frame, "time taken = {:.2f} sec".format(time.time() - t), 
+                    (30, 20), cv2.FONT_HERSHEY_COMPLEX, .8, (255, 50, 0), 2, lineType=cv2.LINE_AA)
+        #cv2.putText(frame, "OpenPose using OpenCV", (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 50, 0), 2, lineType=cv2.LINE_AA)
+        # cv2.imshow('Output-Keypoints', frameCopy)
+        cv2.imshow('Output-Skeleton', frame)
 
-vid_writer.release()    
+        #vid_writer.write(frame)
+
+    heights = {
+        "Video" : input_source,
+        "Head Height" : head_list,
+        "Torso Height" : torso_list
+    }
+
+
+    with open('models/FallDetection/HeightPoints.txt', 'w') as json_file:
+        json.dumps(heights, json_file)
+        #json.dump(torso_list, json_file)
+    #vid_writer.release()    
