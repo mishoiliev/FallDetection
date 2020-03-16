@@ -188,6 +188,7 @@ if __name__ == '__main__':
 
     heights = {
         "Video" : input_source,
+        "Fall Detected" : FallDetected,
         "Head Height" : head_list,
         "Torso Height" : torso_list
     }
