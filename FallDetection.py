@@ -3,6 +3,7 @@ import numpy as np
 import time
 import argparse
 import json
+import xlsxwriter as xl
 
 def Parser():
     parser = argparse.ArgumentParser(description="Set a method for Fall Detection")
@@ -35,6 +36,8 @@ inWidth = 368
 inHeight = 368
 threshold = 0.01
 FallDetected = False
+workbook = xl.Workbook('models/FallDetection/Data.xlsx')
+worksheet = workbook.add_worksheet()
 
 input_source = "models/sample_video1.mp4"
 cap = cv2.VideoCapture(input_source)
@@ -193,6 +196,26 @@ if __name__ == '__main__':
         "Torso Height" : torso_list
     }
 
+    # worksheet.write('A1', "Video")
+    # worksheet.write('A2', "Fall Detected")
+    # worksheet.write('A3', "Head Height")
+    # worksheet.write('A4', "Torso Height")
+    # worksheet.write('B1', input_source)
+    # worksheet.write('B2', FallDetected)
+    
+    # column = 2
+
+    # for item in head_list:
+    #     worksheet.write(2, column, item)
+    #     column += 1
+
+    # column = 2
+
+    # for item in torso_list:
+    #     worksheet.write(3, column, item)
+    #     column +=1
+    
+    # workbook.close()
 
     with open('models/FallDetection/HeightPoints.txt', 'w') as json_file:
         json.dump(heights, json_file)
